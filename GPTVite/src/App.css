@@ -40,6 +40,10 @@ h6 {
   width:100%;
   box-sizing: border-box;
 }
+.load-error {
+  color: #ff5757;
+  margin: -0.5rem 0 1rem;
+}
 .suggestButton.disabled {
   background-color: #cccccc;
   border: 1px solid #333;
@@ -80,4 +84,594 @@ h6 {
 }
 .activityOpening{
   color: #ffb800;
+}
+.osm-map {
+  width: 100%;
+  height: 400px;
+  border-radius: 8px;
+  z-index: 0;
+}
+:root {
+  --grade-ok: #2b9a5a;
+  --grade-moderate: #e39b00;
+  --grade-steep: #e03131;
+  --card-bg: #ffffff;
+  --card-text: #24292f;
+  --card-muted: #5c6370;
+  --card-border: rgba(0, 0, 0, 0.1);
+  --chip-bg: #f1f3f5;
+}
+
+/* Jauge « énergie du jour » */
+.energy-gauge {
+  margin: 1.5rem 0 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: var(--card-bg);
+  color: var(--card-text);
+}
+.energy-gauge legend {
+  float: none;
+  width: auto;
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.energy-gauge__intro {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: var(--card-muted);
+}
+.energy-gauge__spoons {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+}
+.energy-gauge__spoon {
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 0.25rem 0.4rem;
+  font-size: 2rem;
+  line-height: 1;
+  filter: grayscale(1);
+  opacity: 0.3;
+  transition: transform 0.2s, opacity 0.2s, filter 0.2s;
+}
+.energy-gauge__spoon.is-filled {
+  background: rgba(255, 87, 87, 0.14);
+  filter: none;
+  opacity: 1;
+  transform: translateY(-3px) rotate(-12deg);
+}
+.energy-gauge__spoon:hover {
+  border-color: transparent;
+  opacity: 1;
+}
+.energy-gauge__spoon:focus-visible {
+  outline: 3px solid var(--primary-color);
+  outline-offset: 2px;
+}
+.energy-gauge__label {
+  margin: 0.75rem 0 0;
+  min-height: 3em;
+}
+
+.energy-pill {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem;
+  padding: 0.35rem 0.5rem 0.35rem 1rem;
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--card-text);
+  border: 1px solid var(--card-border);
+  font-size: 0.9rem;
+}
+.energy-pill__edit {
+  background: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  border-radius: 999px;
+  padding: 0.15rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+/* Bandeau météo */
+.weather-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  text-align: left;
+  background: var(--card-bg);
+  color: var(--card-text);
+  border: 1px solid var(--card-border);
+  border-left: 6px solid #4dabf7;
+}
+.weather-banner--chaleur {
+  border-left-color: #ff922b;
+}
+.weather-banner--pluie {
+  border-left-color: #4c6ef5;
+}
+.weather-banner__emoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+.weather-banner__message {
+  margin: 0;
+  font-weight: 600;
+}
+.weather-banner__note {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--card-muted);
+}
+
+.search-error {
+  margin: 0 0 1rem;
+  color: #e03131;
+  font-weight: 600;
+}
+
+/* Carte et statut du streaming */
+.map-stage {
+  position: relative;
+}
+.map-stage__status {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  max-width: calc(100% - 24px);
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #24292f;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.map-stage__new {
+  margin-right: 0.25rem;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.map-stage__dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 0.35rem;
+  border-radius: 50%;
+  background: var(--primary-color);
+  animation: gm-blink 1s ease-in-out infinite alternate;
+}
+
+/* Repères d'activités : bulle avec photo ou emoji, qui tombe sur la carte */
+.gm-marker {
+  background: none;
+  border: none;
+}
+.gm-pin {
+  position: relative;
+  width: 48px;
+  height: 56px;
+  transform-origin: 50% 100%;
+  animation: gm-drop 0.75s cubic-bezier(0.22, 0.9, 0.3, 1.15) both;
+}
+.gm-pin::before {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 50%;
+  width: 22px;
+  height: 8px;
+  margin-left: -11px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.28);
+  animation: gm-shadow 0.75s ease-out both;
+}
+.gm-pin::after {
+  content: '';
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  margin-left: -8px;
+  border: 8px solid transparent;
+  border-top: 12px solid #fff;
+  border-bottom: 0;
+}
+.gm-pin__bubble {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.gm-pin__bubble--emoji {
+  background: #fff4e6;
+}
+.gm-pin__bubble img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.gm-pin__label {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  max-width: 220px;
+  padding: 0.15rem 0.6rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #24292f;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translate(-50%, 4px);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+.gm-marker:hover .gm-pin__label,
+.gm-marker:focus-visible .gm-pin__label,
+.gm-marker.is-selected .gm-pin__label {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.gm-marker.is-selected .gm-pin__bubble {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 3px var(--primary-color), 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.gm-user {
+  background: none;
+  border: none;
+}
+.gm-user__dot,
+.gm-user__pulse {
+  position: absolute;
+  border-radius: 50%;
+}
+.gm-user__dot {
+  inset: 2px;
+  background: #1a73e8;
+  border: 2px solid #fff;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+}
+.gm-user__pulse {
+  inset: 0;
+  background: rgba(26, 115, 232, 0.35);
+  animation: gm-pulse 2s ease-out infinite;
+}
+
+/* Cercle de ce qui est atteignable avec l'énergie du jour */
+.gm-reach {
+  stroke: var(--primary-color);
+  stroke-width: 2;
+  stroke-dasharray: 6 6;
+  fill: var(--primary-color);
+  fill-opacity: 0.06;
+}
+
+/* Tracé du trajet, coloré selon la pente */
+.gm-route-halo {
+  stroke: #fff;
+  stroke-width: 10;
+  stroke-opacity: 0.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.gm-route {
+  stroke-width: 6;
+  stroke-opacity: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.gm-route--ok {
+  stroke: var(--grade-ok);
+}
+.gm-route--moderate {
+  stroke: var(--grade-moderate);
+}
+.gm-route--steep {
+  stroke: var(--grade-steep);
+}
+
+@keyframes gm-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-90px) scale(0.6);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(0) scale(1.06, 0.94);
+  }
+  72% {
+    transform: translateY(-10px) scale(0.98, 1.02);
+  }
+  88% {
+    transform: translateY(0) scale(1.02, 0.98);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes gm-shadow {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes gm-pulse {
+  0% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(3);
+  }
+}
+@keyframes gm-blink {
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Détails de l'activité */
+.activity-info {
+  text-align: left;
+}
+.activity-photo {
+  margin: 0 0 0.75rem;
+}
+.activity-photo img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.activity-photo figcaption {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+.activity-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+.activity-badges li {
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  color: var(--card-text);
+  font-size: 0.85rem;
+}
+.activity-badges li.is-far {
+  background: rgba(227, 155, 0, 0.18);
+  color: #8a5a00;
+  font-weight: 600;
+}
+.activity-why {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(126, 217, 87, 0.18);
+  color: var(--card-text);
+  font-weight: 500;
+}
+
+.route-button {
+  display: block;
+  width: 100%;
+  margin-top: 1rem;
+  background: transparent;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  font-weight: 600;
+}
+.route-button:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-color);
+}
+.route-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* Panneau du trajet accessible */
+.route-panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--card-bg);
+  color: var(--card-text);
+  border: 1px solid var(--card-border);
+}
+.route-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.route-panel__header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.route-panel__close {
+  background: transparent;
+  color: var(--card-muted);
+  border: 1px solid var(--card-border);
+  padding: 0.2rem 0.75rem;
+  font-size: 0.85rem;
+}
+.route-panel__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+}
+.route-panel__stats div {
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: var(--chip-bg);
+}
+.route-panel__stats dt {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--card-muted);
+}
+.route-panel__stats dd {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.route-panel__alert {
+  margin: 0 0 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.route-panel__alert--ok {
+  background: rgba(43, 154, 90, 0.14);
+}
+.route-panel__alert--moderate {
+  background: rgba(227, 155, 0, 0.18);
+}
+.route-panel__alert--steep {
+  background: rgba(224, 49, 49, 0.16);
+}
+.route-panel__energy {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+.route-panel__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  color: var(--card-muted);
+}
+.route-panel__swatch {
+  display: inline-block;
+  width: 18px;
+  height: 4px;
+  margin-right: 0.25rem;
+  vertical-align: middle;
+  border-radius: 2px;
+}
+.route-panel__swatch--ok {
+  background: var(--grade-ok);
+}
+.route-panel__swatch--moderate {
+  background: var(--grade-moderate);
+}
+.route-panel__swatch--steep {
+  background: var(--grade-steep);
+}
+.route-panel__note {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--card-muted);
+}
+
+.elevation-chart {
+  margin: 0.5rem 0 0;
+}
+.elevation-chart svg {
+  display: block;
+  width: 100%;
+  height: 90px;
+}
+.elevation-chart__area {
+  fill: var(--chip-bg);
+}
+.elevation-chart__segment {
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.elevation-chart__segment--ok {
+  stroke: var(--grade-ok);
+}
+.elevation-chart__segment--moderate {
+  stroke: var(--grade-moderate);
+}
+.elevation-chart__segment--steep {
+  stroke: var(--grade-steep);
+}
+.elevation-chart__alert {
+  stroke: var(--grade-steep);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+.elevation-chart__axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--card-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gm-pin,
+  .gm-pin::before,
+  .gm-user__pulse,
+  .map-stage__dot {
+    animation: none;
+  }
+  .energy-gauge__spoon,
+  .gm-pin__bubble,
+  .gm-pin__label {
+    transition: none;
+  }
 }

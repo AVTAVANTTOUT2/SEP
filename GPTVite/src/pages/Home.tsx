@@ -2,17 +2,22 @@ import '../App.css';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/logo-goodmaps.png';
+import EnergyGauge from '../components/EnergyGauge';
+import { DEFAULT_ENERGY } from '../energy';
+import { UserInfo } from '../types';
 
 const Home: React.FC = () => {
   const [ability, setAbility] = useState('moteur');
   const [activityPreferences, setActivityPreferences] = useState('');
+  const [energy, setEnergy] = useState(DEFAULT_ENERGY);
   const navigate = useNavigate();
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     // Redirection vers la page de la carte avec les infos utilisateur
-    navigate('/map', { state: { ability, activityPreferences } });
+    const userInfo: UserInfo = { ability, activityPreferences, energy };
+    navigate('/map', { state: userInfo });
   };
 
   return (
@@ -51,6 +56,7 @@ const Home: React.FC = () => {
             />
           </label>
         </div>
+        <EnergyGauge value={energy} onChange={setEnergy} />
         <button type="submit" className='helloButton'>Passer à la carte</button>
       </form>
     </div>
