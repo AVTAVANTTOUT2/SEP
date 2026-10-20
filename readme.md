@@ -36,6 +36,25 @@ Cette application aide les utilisateurs à trouver des activités sur mesure, en
 
 ## Note de version & Work In Progress
 
+### Version 0.4
+
+- Jauge « énergie du jour » (théorie des cuillères) sur l'accueil : distance, durée, intensité et places assises adaptées, rayon atteignable affiché sur la carte
+- Météo Open-Meteo : au-delà de 25 °C, lieux au frais (phénomène d'Uhthoff) ; s'il pleut, activités à l'abri
+- Suggestions en direct : nouvel endpoint `api/getActivitiesStream.php` (une activité par ligne), repères qui tombent sur la carte avec la photo Wikipédia du lieu, survol de la caméra
+- Trajet accessible : routage piéton OpenStreetMap, profil de dénivelé (altitudes IGN RGE ALTI en France, Open-Meteo ailleurs), tracé coloré selon la pente et alerte « montée raide dans 200 m »
+- À déployer sur le serveur : `api/activitiesCommon.php` et `api/getActivitiesStream.php` (en plus de `getActivities.php` modifié). Tant qu'ils ne sont pas en ligne, l'application se replie sur l'ancien endpoint
+- IA configurable dans `api/.env` (toute API compatible OpenAI). Configuration actuelle avec DeepSeek :
+
+```
+AI_API_KEY=sk-...
+AI_API_URL=https://api.deepseek.com/chat/completions
+AI_MODEL=deepseek-flash
+AI_REASONING_EFFORT=none
+```
+
+  `AI_REASONING_EFFORT=none` est indispensable avec DeepSeek V4 : sinon le modèle consomme tout son budget à réfléchir et ne renvoie rien. Les anciennes variables `OPENAI_*` restent acceptées (OpenAI et `gpt-3.5-turbo` par défaut).
+- Côté application, `VITE_API_BASE_URL` permet de pointer vers une autre API (en local par exemple : `php -S 127.0.0.1:8791 -t api`)
+
 ### Version 0.3
 
 - Utiliser Node pour l'API en utilisant une structure ViteJS

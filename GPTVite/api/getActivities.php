@@ -6,82 +6,24 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
 require_once('config.php');
+require_once('activitiesCommon.php');
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(["error" => "Méthode non autorisée"]);
-    exit();
-}
+send_cors_headers();
 
-$input = json_decode(file_get_contents('php://input'), true);
+$request = read_activities_request();
 
-if (!$input) {
-    http_response_code(400);
-    echo json_encode(["error" => "Données invalides"]);
-    exit();
-}
+// Construire le prompt pour l'API d'IA (énergie du jour et météo comprises)
+$prompt = build_activities_prompt($request, 'json');
 
-$userLatitude = $input['latitude'] ?? null;
-$userLongitude = $input['longitude'] ?? null;
-$north = $input['north'] ?? null;
-$south = $input['south'] ?? null;
-$east = $input['east'] ?? null;
-$west = $input['west'] ?? null;
-
-if (!$userLatitude || !$userLongitude || !$north || !$south || !$east || !$west) {
-    http_response_code(400);
-    echo json_encode(["error" => "Latitude, longitude et les limites de la carte sont requis."]);
-    exit();
-}
-
-$userInfo = $input['userInfo'] ?? [];
-$ability = $userInfo['ability'] ?? "aucune capacité spécifiée";
-$activityPreferences = $userInfo['activityPreferences'] ?? null;
-
-$preferencesText = $activityPreferences ? ", avec des préférences pour les activités suivantes : $activityPreferences" : "";
-
-// Construire le prompt pour l'API OpenAI
-$prompt = "Génère une liste de 5 activités adaptées pour une personne ayant la capacité \"$ability\", se trouvant à la latitude $userLatitude et la longitude $userLongitude$preferencesText. Retourne les résultats au format JSON avec un tableau nommé 'activities' contenant pour chaque activité les champs suivants :
-- 'name' : nom de l'activité
-- 'description' : description de l'activité
-- 'lat' et 'lng' : coordonnées géographiques de l'activité proches de la position de l'utilisateur
-- 'opening_hours' : horaires d'ouverture (si disponibles)
-- 'booking_link' : URL pour la réservation en ligne (si disponible)
-- 'phone_number' : numéro de téléphone (si disponible)
-Assure-toi que la sortie est uniquement le JSON sans texte supplémentaire.";
-
-$maxTokens = 1500;
-$apiUrl = 'https://api.openai.com/v1/chat/completions';
-
-$requestData = [
-    "model" => "gpt-3.5-turbo",
-    "messages" => [
-        [
-            "role" => "system",
-            "content" => "Tu es un assistant qui aide à trouver des activités adaptées."
-        ],
-        [
-            "role" => "user",
-            "content" => $prompt
-        ]
-    ],
-    "temperature" => 0.7,
-    "max_tokens" => $maxTokens,
-];
+$apiUrl = ai_api_url();
+$requestData = ai_request_data($prompt, false);
 
 $ch = curl_init($apiUrl);
 
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'Content-Type: application/json',
-    'Authorization: Bearer ' . $_ENV['OPENAI_API_KEY']
-]);
+curl_setopt($ch, CURLOPT_HTTPHEADER, ai_headers());
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestData));
 
 $response = curl_exec($ch);
@@ -89,12 +31,10 @@ $response = curl_exec($ch);
 if ($response === false) {
     http_response_code(500);
     echo json_encode(["error" => "Erreur cURL", "details" => curl_error($ch)]);
-    curl_close($ch);
     exit();
 }
 
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
 
 if ($httpCode !== 200) {
     http_response_code($httpCode);
