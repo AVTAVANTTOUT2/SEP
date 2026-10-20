@@ -5,6 +5,10 @@
 define('DEFAULT_AI_API_URL', 'https://api.openai.com/v1/chat/completions');
 define('DEFAULT_AI_MODEL', 'gpt-3.5-turbo');
 define('ACTIVITY_COUNT', 5);
+define('WIKIPEDIA_API_URL', 'https://fr.wikipedia.org/w/api.php');
+define('NEARBY_PLACES_TIMEOUT_MS', 2000);
+// Types de lieux cherchés autour de la personne (un article doit contenir au moins un de ces mots)
+define('NEARBY_PLACES_KEYWORDS', 'parc OR jardin OR square OR bois OR lac OR étang OR plage OR promenade OR musée OR bibliothèque OR médiathèque OR piscine OR cinéma OR théâtre OR église OR château');
 
 function send_cors_headers(): void
 {
@@ -91,11 +95,84 @@ function weather_instructions(?array $weather): string
     }
 }
 
+function distance_meters(float $lat1, float $lng1, float $lat2, float $lng2): float
+{
+    $dLat = deg2rad($lat2 - $lat1);
+    $dLng = deg2rad($lng2 - $lng1);
+    $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
+    return 6371000 * 2 * asin(sqrt($a));
+}
+
+// Lieux réels (articles Wikipédia géolocalisés) dans le rayon de l'énergie du jour, du plus proche au plus éloigné.
+// Sans cette liste, l'IA propose des lieux célèbres trop loin et devine leurs coordonnées.
+// Renvoie [] si Wikipédia ne répond pas à temps : l'IA choisit alors seule les lieux.
+function nearby_places(float $lat, float $lng, int $meters): array
+{
+    $params = [
+        'action' => 'query',
+        'format' => 'json',
+        'formatversion' => '2',
+        // « nearcoord: » limite la recherche au rayon. Plus rapide que list=geosearch (0,3 à 0,6 s au lieu de 1 à 2 s),
+        // et trié par pertinence : geosearch ne renvoie que les 50 articles les plus proches, surtout des rues et des événements.
+        'generator' => 'search',
+        'gsrsearch' => sprintf('nearcoord:%dm,%.5f,%.5f %s', min($meters, 10000), $lat, $lng, NEARBY_PLACES_KEYWORDS),
+        'gsrlimit' => '50',
+        'prop' => 'coordinates|description',
+        'colimit' => 'max',
+    ];
+
+    $ch = curl_init(WIKIPEDIA_API_URL . '?' . http_build_query($params));
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT_MS => NEARBY_PLACES_TIMEOUT_MS,
+        CURLOPT_USERAGENT => 'GoodMaps/1.0 (https://github.com/AVTAVANTTOUT2/SEP)', // Wikipédia refuse les requêtes sans User-Agent
+    ]);
+    $response = curl_exec($ch);
+    $pages = is_string($response) ? (json_decode($response, true)['query']['pages'] ?? []) : [];
+
+    // Rues, quartiers, communes et gares ne sont pas des activités
+    $notAPlace = '/^(ancien(ne)?\s+)?(rue|avenue|boulevard|quai|impasse|place|pont|gare|station|ligne|tunnel|quartier|sous-quartier|arrondissement|commune|ville|capitale|département|région|diocèse|archidiocèse)\b/iu';
+    $places = [];
+    foreach ($pages as $page) {
+        $coords = $page['coordinates'][0] ?? null;
+        $description = $page['description'] ?? '';
+        if (!$coords || preg_match($notAPlace, $page['title']) || preg_match($notAPlace, $description)) {
+            continue;
+        }
+        $places[] = [
+            'title' => $page['title'],
+            'description' => $description,
+            'lat' => round($coords['lat'], 5),
+            'lng' => round($coords['lon'], 5),
+            'distance' => (int) round(distance_meters($lat, $lng, $coords['lat'], $coords['lon'])),
+        ];
+    }
+    usort($places, fn($a, $b) => $a['distance'] <=> $b['distance']);
+    return $places;
+}
+
+function nearby_places_instructions(array $places): string
+{
+    if (!$places) {
+        return "";
+    }
+    $lines = array_map(function (array $place) {
+        $description = $place['description'] !== '' ? " ({$place['description']})" : '';
+        return "- {$place['title']}$description : lat {$place['lat']}, lng {$place['lng']}, à {$place['distance']} m";
+    }, $places);
+
+    return "Lieux réels situés dans ce rayon (articles Wikipédia), du plus proche au plus éloigné :
+" . implode("\n", $lines) . "
+Choisis tes activités en priorité parmi ces lieux, en ne gardant que ceux qui se prêtent à une activité (parcs, jardins, musées, bibliothèques, piscines, cinémas…) : pas de rue, de station de métro, d'événement historique ni de bâtiment disparu. Pour un lieu de la liste, reprends son nom tel quel dans 'name' et recopie exactement sa latitude et sa longitude dans 'lat' et 'lng'. Si la liste ne suffit pas, complète avec d'autres lieux réels, toujours dans le cadre.
+";
+}
+
 // $format : 'json' (un objet avec un tableau 'activities') ou 'ndjson' (une activité par ligne, pour le streaming)
 function build_activities_prompt(array $request, string $format): string
 {
     $count = ACTIVITY_COUNT;
     $energy = energy_profile($request['energy']);
+    $places = nearby_places($request['latitude'], $request['longitude'], $energy['meters']);
     // Les modèles respectent mieux un cadre de coordonnées qu'une distance
     $deltaLat = $energy['meters'] / 111320;
     $deltaLng = $energy['meters'] / (111320 * cos(deg2rad($request['latitude'])));
@@ -114,7 +191,7 @@ function build_activities_prompt(array $request, string $format): string
 
 Énergie du jour : {$request['energy']}/5 cuillères ({$energy['label']}). Chaque activité doit se trouver à moins de {$energy['distance']} de la personne, durer au maximum {$energy['duration']} et avoir une intensité {$energy['intensity']}. {$energy['rest']}
 Toutes les coordonnées doivent rester dans ce cadre : $box. Préfère un lieu tout proche, même moins connu, à un lieu célèbre plus éloigné.
-" . weather_instructions($request['weather']) . "
+" . nearby_places_instructions($places) . weather_instructions($request['weather']) . "
 
 Pour chaque activité, fournis les champs suivants :
 - 'name' : nom du lieu ou de l'activité

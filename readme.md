@@ -41,6 +41,7 @@ Cette application aide les utilisateurs à trouver des activités sur mesure, en
 - Jauge « énergie du jour » (théorie des cuillères) sur l'accueil : distance, durée, intensité et places assises adaptées, rayon atteignable affiché sur la carte
 - Météo Open-Meteo : au-delà de 25 °C, lieux au frais (phénomène d'Uhthoff) ; s'il pleut, activités à l'abri
 - Suggestions en direct : nouvel endpoint `api/getActivitiesStream.php` (une activité par ligne), repères qui tombent sur la carte avec la photo Wikipédia du lieu, survol de la caméra
+- Lieux réels : avant d'appeler l'IA, l'API cherche sur Wikipédia les parcs, musées, bibliothèques… situés dans le rayon de l'énergie du jour (recherche `nearcoord:`) et les donne à l'IA avec leurs coordonnées exactes. Sans réponse de Wikipédia sous 2 s, l'IA choisit seule les lieux
 - Trajet accessible : routage piéton OpenStreetMap, profil de dénivelé (altitudes IGN RGE ALTI en France, Open-Meteo ailleurs), tracé coloré selon la pente et alerte « montée raide dans 200 m »
 - À déployer sur le serveur : `api/activitiesCommon.php` et `api/getActivitiesStream.php` (en plus de `getActivities.php` modifié). Tant qu'ils ne sont pas en ligne, l'application se replie sur l'ancien endpoint
 - IA configurable dans `api/.env` (toute API compatible OpenAI). Configuration actuelle avec DeepSeek :
